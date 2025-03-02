@@ -2,11 +2,11 @@
 
 WARNING: This is still pre-1.0 and the API may still change however this library is being use at scale in production with good results.
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/nemith/netconf.svg)](https://pkg.go.dev/github.com/nemith/netconf)
-[![Report Card](https://goreportcard.com/badge/github.com/nemith/netconf)](https://goreportcard.com/report/github.com/nemith/netconf)
+[![Go Reference](https://pkg.go.dev/badge/github.com/DinbandhuKumarSingh/netconf.svg)](https://pkg.go.dev/github.com/DinbandhuKumarSingh/netconf)
+[![Report Card](https://goreportcard.com/badge/github.com/DinbandhuKumarSingh/netconf)](https://goreportcard.com/report/github.com/DinbandhuKumarSingh/netconf)
 [![stability-unstable](https://img.shields.io/badge/stability-unstable-yellow.svg)](https://github.com/emersion/stability-badges#unstable)
-[![Validate](https://github.com/nemith/netconf/actions/workflows/validate.yaml/badge.svg?branch=main&event=push)](https://github.com/nemith/netconf/actions/workflows/validate.yaml)
-[![coverage](https://raw.githubusercontent.com/nemith/netconf/coverage/badge.svg)](http://htmlpreview.github.io/?https://github.com/nemith/netconf/blob/coverage/coverage.html)
+[![Validate](https://github.com/DinbandhuKumarSingh/netconf/actions/workflows/validate.yaml/badge.svg?branch=main&event=push)](https://github.com/DinbandhuKumarSingh/netconf/actions/workflows/validate.yaml)
+[![coverage](https://raw.githubusercontent.com/DinbandhuKumarSingh/netconf/coverage/badge.svg)](http://htmlpreview.github.io/?https://github.com/DinbandhuKumarSingh/netconf/blob/coverage/coverage.html)
 
 This library is used to create client applications for connecting to network devices via NETCONF.
 
@@ -45,7 +45,7 @@ See [TODO.md](TODO.md) for a list of what is left to implement these features.
 
 ### Differences from [`github.com/juniper/go-netconf/netconf`](https://pkg.go.dev/github.com/Juniper/go-netconf)
 
-* **Much cleaner, idomatic API, less dumb** I, @nemith, was the original creator of the netconf package and it was my very first Go project and it shows.  There are number of questionable API design, code, and a lot of odd un tested bugs.  Really this rewrite was created to fix this.
+* **Much cleaner, idomatic API, less dumb** I, @DinbandhuKumarSingh, was the original creator of the netconf package and it was my very first Go project and it shows.  There are number of questionable API design, code, and a lot of odd un tested bugs.  Really this rewrite was created to fix this.
 * **No impled vendor ownership** Moving the project out of the `Juniper` organization allowes better control over the project, less implied support (or lack there of), and hopefully more contributions.
 * **Transports are implemented in their own packages.**  This means if you are not using SSH or TLS you don't need to bring in the underlying depdendencies into your binary.
 * **Stream based transports.**  Should mean less memory usage and much less allocation bringing overall performance higher.
