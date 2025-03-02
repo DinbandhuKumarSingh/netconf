@@ -6,7 +6,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/nemith/netconf/transport"
+	"github.com/DinbandhuKumarSingh/netconf/transport"
 	"golang.org/x/crypto/ssh"
 )
 

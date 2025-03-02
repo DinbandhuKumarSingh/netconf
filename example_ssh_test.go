@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
+	ncssh "github.com/DinbandhuKumarSingh/netconf/ssh"
 	"github.com/nemith/netconf"
-	ncssh "github.com/nemith/netconf/transport/ssh"
 	"golang.org/x/crypto/ssh"
 )
 

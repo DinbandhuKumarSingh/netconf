@@ -1,4 +1,4 @@
-module github.com/nemith/netconf
+module github.com/DinbandhuKumarSingh/netconf
 
 go 1.21
 
