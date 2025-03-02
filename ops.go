@@ -1,9 +1,13 @@
 package netconf
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"html"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -91,6 +95,7 @@ const (
 type GetConfigReq struct {
 	XMLName xml.Name  `xml:"get-config"`
 	Source  Datastore `xml:"source"`
+	Filter string `xml:",innerxml"`
 	// Filter
 }
 
@@ -99,13 +104,73 @@ type GetConfigReply struct {
 	Config  []byte   `xml:",innerxml"`
 }
 
+// parseXPathToXML converts an XPath expression into an XML subtree
+func parseXPathToXML(xpath string) (string, error) {
+	if !strings.HasPrefix(xpath, "/") {
+		return "", errors.New("invalid XPath format: must start with '/'")
+	}
+	// Regular expression to extract elements and conditions (e.g., `/library/book[title="Go Programming"]`)
+	re := regexp.MustCompile(`/([\w-]+)(?:\[(.+?)=['"](.+?)['"]\])?`)
+	matches := re.FindAllStringSubmatch(xpath, -1)
+
+	if len(matches) == 0 {
+		return "", fmt.Errorf("invalid XPath format")
+	}
+
+	var buffer bytes.Buffer
+	buffer.WriteString("") // Start XML
+
+	// Track open tags to properly close them later
+	openTags := []string{}
+
+	// Build XML from parsed XPath
+	for _, match := range matches {
+		element := match[1] // XML tag name (e.g., library, book)
+
+		// Open tag
+		buffer.WriteString(fmt.Sprintf("<%s>", element))
+		openTags = append(openTags, element)
+
+		// If there's a condition (e.g., title="Go Programming"), add a child node
+		if match[2] != "" && match[3] != "" {
+			conditionTag := match[2] // e.g., title
+			value := match[3]        // e.g., "Go Programming"
+
+			buffer.WriteString(fmt.Sprintf("<%s>%s</%s>", conditionTag, html.EscapeString(value), conditionTag))
+		}
+	}
+
+	// Close all open tags in reverse order
+	for i := len(openTags) - 1; i >= 0; i-- {
+		buffer.WriteString(fmt.Sprintf("</%s>", openTags[i]))
+	}
+
+	return buffer.String(), nil
+}
+
+type rpcOptions func(*GetConfigReq)
+
+func WithFilter(xpath string) rpcOptions{
+	return func(c *GetConfigReq){
+		subtree,err:=parseXPathToXML(xpath)
+		if(err==nil){
+			str:=`<filter type="subtree">%s</filter>`
+			c.Filter=fmt.Sprintf(str,subtree)
+		}
+	}
+
+}
+
 // GetConfig implements the <get-config> rpc operation defined in [RFC6241 7.1].
 // `source` is the datastore to query.
 //
 // [RFC6241 7.1]: https://www.rfc-editor.org/rfc/rfc6241.html#section-7.1
-func (s *Session) GetConfig(ctx context.Context, source Datastore) ([]byte, error) {
+func (s *Session) GetConfig(ctx context.Context, source Datastore,opts ...rpcOptions) ([]byte, error) {
 	req := GetConfigReq{
 		Source: source,
+	}
+	for _, opt := range opts {
+		opt(&req)
 	}
 
 	var resp GetConfigReply
@@ -478,8 +543,7 @@ type CreateSubscriptionOption interface {
 type CreateSubscriptionReq struct {
 	XMLName xml.Name `xml:"urn:ietf:params:xml:ns:netconf:notification:1.0 create-subscription"`
 	Stream  string   `xml:"stream,omitempty"`
-	// TODO: Implement filter
-	//Filter    int64    `xml:"filter,omitempty"`
+	Filter    string    `xml:",innerxml"`
 	StartTime string `xml:"startTime,omitempty"`
 	EndTime   string `xml:"endTime,omitempty"`
 }
@@ -487,6 +551,7 @@ type CreateSubscriptionReq struct {
 type stream string
 type startTime time.Time
 type endTime time.Time
+type filter string
 
 func (o stream) apply(req *CreateSubscriptionReq) {
 	req.Stream = string(o)
@@ -497,10 +562,18 @@ func (o startTime) apply(req *CreateSubscriptionReq) {
 func (o endTime) apply(req *CreateSubscriptionReq) {
 	req.EndTime = time.Time(o).Format(time.RFC3339)
 }
+func (o filter) apply(req *CreateSubscriptionReq){
+	subtree,err:=parseXPathToXML(string(o))
+	if(err==nil){
+		str:=`<filter type="subtree">%s</filter>`
+		req.Filter=fmt.Sprintf(str,subtree)
+	}
+}
 
 func WithStreamOption(s string) CreateSubscriptionOption        { return stream(s) }
 func WithStartTimeOption(st time.Time) CreateSubscriptionOption { return startTime(st) }
 func WithEndTimeOption(et time.Time) CreateSubscriptionOption   { return endTime(et) }
+func WithFilterOption(xpath string) CreateSubscriptionOption	{return filter(xpath)}
 
 func (s *Session) CreateSubscription(ctx context.Context, opts ...CreateSubscriptionOption) error {
 	var req CreateSubscriptionReq

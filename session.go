@@ -20,6 +20,7 @@ var ErrClosed = errors.New("closed connection")
 type sessionConfig struct {
 	capabilities        []string
 	notificationHandler NotificationHandler
+	disconnectionHandler ConnectionHandler
 }
 
 type SessionOption interface {
@@ -48,6 +49,15 @@ func WithNotificationHandler(nh NotificationHandler) SessionOption {
 	return notificationHandlerOpt(nh)
 }
 
+type disconnectionHandlerOpt ConnectionHandler
+func (o disconnectionHandlerOpt) apply(cfg *sessionConfig) {
+	cfg.disconnectionHandler = ConnectionHandler(o)
+}
+
+func WithDisconnectHandler(dh ConnectionHandler) SessionOption{
+	return disconnectionHandlerOpt(dh)
+}
+
 // Session is represents a netconf session to a one given device.
 type Session struct {
 	tr        transport.Transport
@@ -57,6 +67,7 @@ type Session struct {
 	clientCaps          capabilitySet
 	serverCaps          capabilitySet
 	notificationHandler NotificationHandler
+	disconnectionHandler ConnectionHandler
 
 	mu      sync.Mutex
 	reqs    map[uint64]*req
@@ -68,6 +79,7 @@ type Session struct {
 // A typical use of the NofificationHandler function is to retrieve notifications once they are received so
 // that they can be parsed and/or stored somewhere.
 type NotificationHandler func(msg Notification)
+type ConnectionHandler func()
 
 func newSession(transport transport.Transport, opts ...SessionOption) *Session {
 	cfg := sessionConfig{
@@ -83,6 +95,7 @@ func newSession(transport transport.Transport, opts ...SessionOption) *Session {
 		clientCaps:          newCapabilitySet(cfg.capabilities...),
 		reqs:                make(map[uint64]*req),
 		notificationHandler: cfg.notificationHandler,
+		disconnectionHandler: cfg.disconnectionHandler,
 	}
 	return s
 }
@@ -243,6 +256,7 @@ func (s *Session) recv() {
 	for {
 		err = s.recvMsg()
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.As(err, &opErr) {
+			s.disconnectionHandler()
 			break
 		}
 		if err != nil {
