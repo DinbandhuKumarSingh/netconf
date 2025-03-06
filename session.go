@@ -256,7 +256,9 @@ func (s *Session) recv() {
 	for {
 		err = s.recvMsg()
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.As(err, &opErr) {
-			s.disconnectionHandler()
+			if s.disconnectionHandler!=nil{
+				s.disconnectionHandler()
+			}
 			break
 		}
 		if err != nil {
