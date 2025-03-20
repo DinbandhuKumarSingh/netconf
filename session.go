@@ -295,11 +295,12 @@ func (s *Session) writeMsg(v any) error {
 	if err != nil {
 		return err
 	}
+	defer w.Close()
 
 	if err := xml.NewEncoder(w).Encode(v); err != nil {
 		return err
 	}
-	return w.Close()
+	return nil
 }
 
 func (s *Session) send(ctx context.Context, msg *request) (chan Reply, error) {
